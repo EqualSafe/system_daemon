@@ -31,7 +31,7 @@ OBJ = $(OBJ_CPP) $(OBJ_C)
 # Default target
 all: $(EXEC)
 	@echo =============================================================================
-	@echo The media daemon has been created successfully under ./build/bin/media_daemon
+	@echo The system daemon has been created successfully under ./build/bin/system_daemon
 	@echo =============================================================================
 
 $(EXEC): $(OBJ)
@@ -53,10 +53,10 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 install:
-	mkdir -p /usr/share/media_daemon
-	cp -r ./build/bin/* /usr/share/media_daemon/
+	mkdir -p /usr/share/system_daemon
+	cp -r ./build/bin/* /usr/share/system_daemon/
 	cp -r ./rootfs/* /
-	export PATH=$$PATH:/usr/share/media_daemon
+	export PATH=$$PATH:/usr/share/system_daemon
 
 # Phony targets
 .PHONY: all clean

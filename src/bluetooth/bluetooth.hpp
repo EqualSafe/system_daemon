@@ -20,8 +20,8 @@ extern "C" {
 #include <unistd.h>
 #include <climits>
 #include <nlohmann/json.hpp>
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/rfcomm.h>
+// #include <bluetooth/bluetooth.h>
+// #include <bluetooth/rfcomm.h>
 
 
 #include "../utils/log.hpp"
