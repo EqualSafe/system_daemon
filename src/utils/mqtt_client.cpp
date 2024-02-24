@@ -8,6 +8,7 @@ MQTTClientServer::MQTTClientServer()
     this->__log = new Log("MQTT");
     MQTTClient_create(&client, "tcp://0.0.0.0:1883", "mqtt_client",
                       MQTTCLIENT_PERSISTENCE_NONE, nullptr);
+    this->__config_dep = {"url", "port", "ca", "cert", "key"};
 }
 
 // Destructor
@@ -28,6 +29,42 @@ int MQTTClientServer::connect(const std::string& address, const std::string& cli
 
     conn_opts.keepAliveInterval = 20;
     conn_opts.cleansession = 1;
+
+    MQTTClient_setCallbacks(client, this, nullptr, __message_arrived, nullptr);
+
+    if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
+    {
+        this->__log->print(LOG_ERROR, "Failed to connect, return code %d\n", rc);
+    }
+    return rc;
+}
+
+int MQTTClientServer::connect(std::unordered_map<std::string,std::string> config, const std::string& clientId)
+{
+    this->__log->print(LOG_NORMAL, "connect");
+    for (std::string dep : this->__config_dep)
+    {
+        if (config.find(dep) == config.end())
+        {
+            this->__log->print(LOG_ERROR, "Missing config dependancy %s", dep.c_str());
+            return 1;
+        }
+    }
+    int rc;
+
+    MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
+    ssl_opts.trustStore = config["ca"].c_str();
+    ssl_opts.keyStore = config["cert"].c_str();
+    ssl_opts.privateKey = config["key"].c_str();
+
+    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+    conn_opts.ssl = &ssl_opts;
+    conn_opts.keepAliveInterval = 1;
+    conn_opts.cleansession = 1;
+    std::string address = "ssl://" + config["url"] + ":" + config["port"];
+
+    MQTTClient_create(&client, address.c_str(), clientId.c_str(),
+                      MQTTCLIENT_PERSISTENCE_NONE, NULL);
 
     MQTTClient_setCallbacks(client, this, nullptr, __message_arrived, nullptr);
 

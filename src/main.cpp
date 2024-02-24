@@ -34,8 +34,17 @@ int main(int argc, char **argv)
     register_signal_handlers();
 
     // mqtt
+    std::unordered_map<std::string,std::string> mqtt_config = {
+        {"url", "a3k8g52cygaavt-ats.iot.us-east-2.amazonaws.com"},
+        {"port", "8883"},
+        {"ca", "/etc/certs/root-CA.crt"},
+        {"cert", "/etc/certs/safe.cert.pem"},
+        {"key", "/etc/certs/safe.private.key"},
+    };
     mqtt_client = new MQTTClientServer();
-    mqtt_client->connect("tcp://127.0.0.1:1883", "system_daemon");
+    mqtt_client->connect(mqtt_config, "system_daemon");
+
+    // mqtt_client->connect("tcp://127.0.0.1:1883", "system_daemon");
     // bluetooth
 
     // wifi

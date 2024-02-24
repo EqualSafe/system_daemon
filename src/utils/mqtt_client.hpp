@@ -22,8 +22,8 @@ class MQTTClientServer
 public:
     MQTTClientServer();
     ~MQTTClientServer();
-
     int connect(const std::string& address, const std::string& clientId);
+    int connect(std::unordered_map<std::string,std::string> config, const std::string& clientId);
     int disconnect();
     int subscribe(const std::string& topic, callback_t callback);
     int unsubscribe(const std::string& topic, callback_t callback);
@@ -34,6 +34,7 @@ private:
     Log *__log;
     MQTTClient client;
     std::unordered_map<std::string, std::vector<callback_t>> callbacks; // Store multiple callbacks for each topic
+    std::vector<std::string> __config_dep;
     static int __message_arrived(void* context, char* topicName, int topicLen, MQTTClient_message* message);
     bool __topic_matches_subscription(const std::string& sub, const std::string& topic);
 };
