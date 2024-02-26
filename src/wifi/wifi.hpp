@@ -1,5 +1,5 @@
-#ifndef     BLUETOOTH
-#define     BLUETOOTH
+#ifndef     SYSTEM_WIFI
+#define     SYSTEM_WIFI
 
 #define     MAX_INPUT       1024
 
@@ -11,6 +11,7 @@ extern "C" {
 #include <map>
 #include <unordered_map>
 #include <functional>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <cstdlib>
@@ -20,66 +21,58 @@ extern "C" {
 #include <unistd.h>
 #include <climits>
 #include <nlohmann/json.hpp>
-// #include <bluetooth/bluetooth.h>
-// #include <bluetooth/rfcomm.h>
+// #include <Wifi/Wifi.h>
+// #include <Wifi/rfcomm.h>
 
 
 #include "../utils/log.hpp"
 #include "../utils/mqtt_client.hpp"
 
 typedef enum {
-    BLUETOOTH_SUCCESS,
-    BLUETOOTH_COMMAND_ERROR,
-    BLUETOOTH_THREAD_ERROR,
-    BLUETOOTH_CONFIG_ERROR,
-} BLUETOOTH_ERROR_T;
+    WIFI_SUCCESS,
+    WIFI_COMMAND_ERROR,
+    WIFI_THREAD_ERROR,
+    WIFI_CONFIG_ERROR,
+} WIFI_ERROR_T;
 
-class Bluetooth {
+class Wifi {
 public:
-    Bluetooth();
-    Bluetooth(std::unordered_map<std::string, std::string> config);
-    int set_config(std::unordered_map<std::string, std::string> config);
+    Wifi();
+    Wifi(std::unordered_map<std::string, std::string> config);
+    //int set_config(std::unordered_map<std::string, std::string> config);
+    int add_network(const std::string& ssid, const std::string& password);
+    int remove_network(const std::string& ssid);
     int publish_info();
-    /**
-     * Start the bluetooth and make it discoverable
-    */
     int start();
-    /**
-     * Stop the bluetooth and make it undiscoverable
-    */
     int stop();
+    int restart();
+    int connect(const std::string& ssid, const std::string& password);
     int subscribe();
     int unsubscribe();
-    /**
-     * this will be our main entry point for device config
-    */
-    int accept_commands();
-    /**
-     * save and send all of the recived configuration to device and aws
-    */
-    int register_device();
 
-    ~Bluetooth();
+    ~Wifi();
 
     std::map<std::string, std::function<int(const std::string&, json)>> callbacks;
     bool running;
+    // std::string url;
     json *info;
     int time;
+
+    std::string wpa_conf_path;
 
     // variables
     MQTTClientServer *client;
     std::string __prefix;
     std::unordered_map<std::string, std::string> __config;
     std::vector<std::string> __config_dep;
-    std::thread *__bluetooth_thread;
-    int __bluetooth_fd;
+    std::thread *__wifi_thread;
+    int __wifi_fd;
     std::string __type;
     Log *__log;
 
-    bool __kill_bluetooth_flag;
+    bool __kill_wifi_flag;
 private:
     int __start();
 };
-
 
 #endif

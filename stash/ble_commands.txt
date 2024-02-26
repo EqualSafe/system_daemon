@@ -1,0 +1,4 @@
+busctl introspect org.bluez /org/bluez/hci0
+bluetoothctl advertise on
+sudo hciconfig hci0 leadv 3
+iwconfig

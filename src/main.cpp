@@ -6,10 +6,12 @@
 #include <csignal>
 #include "utils/mqtt_client.hpp"
 #include "utils/log.hpp"
+#include "wifi/wifi.hpp"
 //#include "bluetooth/bluetooth.hpp"
 
 Log global_log = Log("GLOBAL");
 MQTTClientServer *mqtt_client;
+Wifi *wifi_instance;
 
 void handle_signal(int signal) {
     global_log.print(LOG_NORMAL, "Received signal %d, cleaning up and exitng!", signal);
@@ -39,6 +41,10 @@ int main(int argc, char **argv)
     // bluetooth
 
     // wifi
+    wifi_instance = new Wifi();
+    wifi_instance->client = mqtt_client;
+    wifi_instance->start();
+    wifi_instance->subscribe();
 
     // lock
 
