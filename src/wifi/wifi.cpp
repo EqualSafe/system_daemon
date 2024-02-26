@@ -14,6 +14,7 @@ int Wifi::restart()
     this->stop();
     this->start();
     system("sudo wpa_cli -i wlan0 reconfigure");
+    this->__log->print(LOG_SUCCESS, "Restarting WIFI");
     return WIFI_SUCCESS;
 }
 
@@ -49,6 +50,8 @@ int Wifi::add_network(const std::string& ssid, const std::string& password)
     out_file << "}\n";
     out_file.close();
 
+    this->__log->print(LOG_SUCCESS, "Added SSID %s", ssid.c_str());
+
     return WIFI_SUCCESS;
 }
 
@@ -73,26 +76,47 @@ int Wifi::remove_network(const std::string& ssid) {
     file.close();
 
     if (!ssid_exists) {
-        this->__log->print(LOG_ERROR, "Couldn't find SSID %s", ssid.c_str());
+        this->__log->print(LOG_ERROR, "Couldn't find in retained networks, didn't remove SSID %s", ssid.c_str());
         return WIFI_COMMAND_ERROR;
     }
 
-    // Remove the existing network block for the specified SSID
+
     std::vector<std::string> new_lines;
     bool in_block = false;
-    for (const auto& l : lines) {
-        if (l.find("network={") != std::string::npos) {
+    bool remove_block = false;
+    std::vector<std::string> current_block_lines; // Use a vector to hold lines for the current block
+
+    for (const auto& line : lines) {
+        if (line.find("network={") != std::string::npos) {
             in_block = true;
+            remove_block = false; // Reset at the start of each new block
+            current_block_lines.clear(); // Clear previous block content
+            current_block_lines.push_back(line); // Start capturing the new block
+            continue; // Move to the next line
         }
-        if (!in_block) {
-            new_lines.push_back(l);
-        }
-        if (l.find("ssid=\"" + ssid + "\"") != std::string::npos) {
-            in_block = false; // Start skipping lines
-        }
-        if (l.find("}") != std::string::npos && in_block) {
-            in_block = false; // Stop skipping lines after the block ends
-            continue;
+
+        if (in_block) {
+            current_block_lines.push_back(line); // Continue capturing lines for the current block
+            if (line.find("ssid=\"" + ssid + "\"") != std::string::npos) {
+                remove_block = true; // Mark for removal if the SSID matches
+            }
+            if (line.find("}") != std::string::npos) {
+                in_block = false; // We've reached the end of a block
+                if (!remove_block) {
+                    // If the block is not marked for removal, add the entire block to new_lines
+                    for (const auto& block_line : current_block_lines) {
+                        new_lines.push_back(block_line);
+                    }
+                    // Add a newline after each block, except for the last one
+                    new_lines.push_back("");
+                }
+                continue;
+            }
+        } else {
+            // Directly add lines that are outside of network blocks, checking for redundant newlines
+            if (!line.empty() || (!new_lines.empty() && !new_lines.back().empty())) {
+                new_lines.push_back(line);
+            }
         }
     }
 
