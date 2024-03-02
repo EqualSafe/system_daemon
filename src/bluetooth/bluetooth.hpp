@@ -1,7 +1,9 @@
 #ifndef     BLUETOOTH
 #define     BLUETOOTH
 
+#ifndef     MAX_INPUT
 #define     MAX_INPUT       1024
+#endif
 
 extern "C" {
     #include "../utils/utils.h"
@@ -20,9 +22,6 @@ extern "C" {
 #include <unistd.h>
 #include <climits>
 #include <nlohmann/json.hpp>
-// #include <bluetooth/bluetooth.h>
-// #include <bluetooth/rfcomm.h>
-
 
 #include "../utils/log.hpp"
 #include "../utils/mqtt_client.hpp"
@@ -38,7 +37,6 @@ class Bluetooth {
 public:
     Bluetooth();
     Bluetooth(std::unordered_map<std::string, std::string> config);
-    int set_config(std::unordered_map<std::string, std::string> config);
     int publish_info();
     /**
      * Start the bluetooth and make it discoverable
@@ -50,14 +48,6 @@ public:
     int stop();
     int subscribe();
     int unsubscribe();
-    /**
-     * this will be our main entry point for device config
-    */
-    int accept_commands();
-    /**
-     * save and send all of the recived configuration to device and aws
-    */
-    int register_device();
 
     ~Bluetooth();
 
@@ -69,12 +59,20 @@ public:
     // variables
     MQTTClientServer *client;
     std::string __prefix;
-    std::unordered_map<std::string, std::string> __config;
-    std::vector<std::string> __config_dep;
     std::thread *__bluetooth_thread;
     int __bluetooth_fd;
     std::string __type;
     Log *__log;
+
+    /**
+     * TODO:
+     *      MAKE THE UUIDS CONFIGIRABLE
+     *      INSIDE OF THE SYSTEM DAEMON
+     *      NOT THE SCRIPT
+    */
+    std::string service_uuid;
+    std::string char_tx_uuid;
+    std::string char_rx_uuid;
 
     bool __kill_bluetooth_flag;
 private:

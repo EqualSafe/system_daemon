@@ -131,6 +131,25 @@ int Wifi::remove_network(const std::string& ssid) {
     return WIFI_SUCCESS;
 }
 
+std::vector<std::string> Wifi::get_known_wifi()
+{
+    std::ifstream file(this->wpa_conf_path);
+    std::vector<std::string> known_networks;
+    std::string line;
+
+    std::regex ssid_regex(R"(ssid="([^"]+))");
+    std::smatch match;
+
+    while (getline(file, line)) {
+        if (std::regex_search(line, match, ssid_regex) && match.size() > 1) {
+            std::cout << match[1] << std::endl;
+            known_networks.push_back(match[1]);
+        }
+    }
+
+    return known_networks;
+}
+
 int Wifi::connect(const std::string &ssid, const std::string &password)
 {
     this->add_network(ssid, password);
@@ -169,7 +188,7 @@ int Wifi::subscribe()
     callbacks["sys/ble_serial/rx/+"] = [&](const std::string& topic, json payload)
     {
         if (payload["command"] == "add_wifi") {
-            this->__log->print(LOG_NORMAL, "Got ble command add_wifi. topic: %s", topic.c_str());
+            this->__log->print(LOG_NORMAL, "ble command add_wifi. topic: %s", topic.c_str());
             if (!payload["ssid"].is_string() || payload["ssid"].empty()) {
                 json p = {
                     {"ts", "UNKNOWN"},
@@ -186,6 +205,35 @@ int Wifi::subscribe()
             this->connect(payload["ssid"], password);
             json p = {
                 {"ts", "UNKNOWN"},
+                {"status", "success"},
+            };
+            this->client->publish("sys/ble_serial/tx/" + this->__log->get_time(), p);
+        } else if (payload["command"] == "remove_wifi") {
+            this->__log->print(LOG_NORMAL, "ble command remove_wifi. topic: %s", topic.c_str());
+            if (!payload["ssid"].is_string() || payload["ssid"].empty()) {
+                json p = {
+                    {"ts", "UNKNOWN"},
+                    {"status", "error"},
+                    {"msg", "no ssid provided"}
+                };
+                this->__log->get_time();
+                this->client->publish("sys/ble_serial/tx/" + this->__log->get_time(), p);
+                return 0;
+            }
+
+            this->remove_network(payload["ssid"]);
+            json p = {
+                {"ts", "UNKNOWN"},
+                {"status", "success"},
+            };
+            this->client->publish("sys/ble_serial/tx/" + this->__log->get_time(), p);
+        } else if (payload["command"] == "list_known_wifi") {
+            this->__log->print(LOG_NORMAL, "ble command list_known_wifi. topic: %s", topic.c_str());
+
+            std::vector<std::string> list = this->get_known_wifi();
+            json p = {
+                {"ts", "UNKNOWN"},
+                {"networks",  list},
                 {"status", "success"},
             };
             this->client->publish("sys/ble_serial/tx/" + this->__log->get_time(), p);

@@ -1,3 +1,9 @@
+# DO NOT USE AS A MAIN SETUP
+# THIS WILL SETUP A VENV
+# AND WE WANT THE SYSTEM
+# TO HAVE THE LIBRARIES
+# GLOBALLY
+
 sudo apt install \
     libdbus-1-dev \
     libgirepository1.0-dev \

@@ -12,6 +12,7 @@ extern "C" {
 #include <unordered_map>
 #include <functional>
 #include <fstream>
+#include <regex>
 #include <vector>
 #include <string>
 #include <cstdlib>
@@ -21,8 +22,6 @@ extern "C" {
 #include <unistd.h>
 #include <climits>
 #include <nlohmann/json.hpp>
-// #include <Wifi/Wifi.h>
-// #include <Wifi/rfcomm.h>
 
 
 #include "../utils/log.hpp"
@@ -39,9 +38,9 @@ class Wifi {
 public:
     Wifi();
     Wifi(std::unordered_map<std::string, std::string> config);
-    //int set_config(std::unordered_map<std::string, std::string> config);
     int add_network(const std::string& ssid, const std::string& password);
     int remove_network(const std::string& ssid);
+    std::vector<std::string> get_known_wifi();
     int publish_info();
     int start();
     int stop();

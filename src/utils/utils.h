@@ -1,3 +1,5 @@
+#ifndef UTILS
+#define UTILS
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -11,3 +13,5 @@ typedef struct popen2 {
 } popen2_t;
 
 int popen2(const char *cmdline, struct popen2 *childinfo);
+
+#endif
