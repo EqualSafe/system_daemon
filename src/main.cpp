@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <unistd.h>
 #include <map>
@@ -60,16 +59,14 @@ int main(int argc, char **argv)
      * On connection drop, we revert to bluetooth, so that we
      * can communicate (unlocking/locking/setup_wifi)
     */
-    bluetooth_instance->start();
     bluetooth_instance->subscribe();
+    bluetooth_instance->start();
 
     // wifi
     wifi_instance = new Wifi();
     wifi_instance->client = mqtt_client;
-    wifi_instance->start();
     wifi_instance->subscribe();
-
-    // lock
+    wifi_instance->start();
 
     int time = 0;
     while (1) {
