@@ -84,13 +84,11 @@ int Bluetooth::publish_info()
 
 int Bluetooth::subscribe()
 {
-     if (this->__prefix == "" || !this->client)
-    {
+    if (this->__prefix == "" || !this->client) {
         return BLUETOOTH_COMMAND_ERROR;
     }
 
-    callbacks[this->__prefix + "/start/+"] = [&](const std::string& topic, json payload)
-    {
+    callbacks[this->__prefix + "/start/+"] = [&](const std::string& topic, json payload) {
         this->__log->print(LOG_NORMAL, "MQTT start. topic: %s", topic.c_str());
         if (!this->running) {
             this->start();
@@ -137,7 +135,16 @@ int Bluetooth::subscribe()
 
 int Bluetooth::unsubscribe()
 {
-    return 0;
+    if (!this->client)
+    {
+        return BLUETOOTH_COMMAND_ERROR;
+    }
+
+    for (auto &it : callbacks) {
+        client->unsubscribe(it.first, it.second);
+    }
+
+    return BLUETOOTH_SUCCESS;
 }
 
 Bluetooth::~Bluetooth()
