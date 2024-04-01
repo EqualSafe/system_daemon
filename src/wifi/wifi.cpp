@@ -185,6 +185,77 @@ int Wifi::subscribe()
         return 0;
     };
 
+    callbacks[this->__prefix + "/stop/+"] = [&](const std::string& topic, json payload)
+    {
+        this->__log->print(LOG_NORMAL, "MQTT stop. topic: %s", topic.c_str());
+        if (this->running) {
+            this->stop();
+            json p = {
+                {"msg", "starting"}
+            };
+            this->__log->print(LOG_SUCCESS, "MQTT start success");
+            client->publish(topic + "/success", p);
+        } else {
+            json p = {
+                {"msg", "already stopped"}
+            };
+            this->__log->print(LOG_ERROR, "MQTT start error");
+            client->publish(topic + "/error", p);
+        }
+        return 0;
+    };
+
+    callbacks[this->__prefix + "/list_known_networks/+"] = [&](const std::string& topic, json payload)
+    {
+        this->__log->print(LOG_NORMAL, "list_known_wifi. topic: %s", topic.c_str());
+        std::vector<std::string> list = this->get_known_wifi();
+        json p = {
+            {"networks",  list},
+        };
+        client->publish(topic + "/success", p);
+        return 0;
+    };
+
+    callbacks[this->__prefix + "/add_network/+"] = [&](const std::string& topic, json payload)
+    {
+        if (!payload["ssid"].is_string() || payload["ssid"].empty()) {
+            json p = {
+                {"status", "error"},
+                {"msg", "no ssid provided"}
+            };
+            client->publish(topic + "/error", p);
+            return 0;
+        }
+
+        std::string password = payload["password"].is_string() ? payload["password"] : "";
+
+        this->connect(payload["ssid"], password);
+        json p = {
+            {"status", "success"},
+        };
+        client->publish(topic + "/success", p);
+        return 0;
+    };
+
+    callbacks[this->__prefix + "/remove_network/+"] = [&](const std::string& topic, json payload)
+    {
+        if (!payload["ssid"].is_string() || payload["ssid"].empty()) {
+            json p = {
+                {"status", "error"},
+                {"msg", "no ssid provided"}
+            };
+            client->publish(topic + "/error", p);
+            return 0;
+        }
+
+        this->remove_network(payload["ssid"]);
+        json p = {
+            {"status", "success"},
+        };
+        client->publish(topic + "/success", p);
+        return 0;
+    };
+
     callbacks["sys/ble_serial/rx/+"] = [&](const std::string& topic, json payload)
     {
         if (payload["command"] == "add_wifi") {
@@ -195,7 +266,6 @@ int Wifi::subscribe()
                     {"status", "error"},
                     {"msg", "no ssid provided"}
                 };
-                this->__log->get_time();
                 this->client->publish("sys/ble_serial/tx/" + this->__log->get_time(), p);
                 return 0;
             }
@@ -216,7 +286,6 @@ int Wifi::subscribe()
                     {"status", "error"},
                     {"msg", "no ssid provided"}
                 };
-                this->__log->get_time();
                 this->client->publish("sys/ble_serial/tx/" + this->__log->get_time(), p);
                 return 0;
             }
