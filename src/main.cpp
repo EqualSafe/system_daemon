@@ -20,6 +20,9 @@ void handle_signal(int signal) {
     if (bluetooth_instance) {
         delete bluetooth_instance;
     }
+    if (wifi_instance) {
+        delete wifi_instance;
+    }
 
     exit(signal);
 }
@@ -49,24 +52,18 @@ int main(int argc, char **argv)
     // bluetooth
     bluetooth_instance = new Bluetooth();
     bluetooth_instance->client = mqtt_client;
-    /**
-     * The following should be changed to only allow bluetooth
-     * to start when an external signal (mqtt) is issued...
-     *
-     * If the network is up and running, we should route all
-     * of our communication with the device through AWS.
-     *
-     * On connection drop, we revert to bluetooth, so that we
-     * can communicate (unlocking/locking/setup_wifi)
-    */
     bluetooth_instance->subscribe();
-    bluetooth_instance->start();
 
     // wifi
     wifi_instance = new Wifi();
     wifi_instance->client = mqtt_client;
     wifi_instance->subscribe();
     wifi_instance->start();
+
+    global_log.print(LOG_NORMAL, "PUBLISHING INFO TOPICS...");
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    bluetooth_instance->publish_info();
+    wifi_instance->publish_info();
 
     int time = 0;
     while (1) {

@@ -53,7 +53,7 @@ public:
 
     std::map<std::string, std::function<int(const std::string&, json)>> callbacks;
     bool running;
-    json *info;
+    json info;
     int time;
 
     // variables

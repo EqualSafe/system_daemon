@@ -14,6 +14,7 @@ extern "C" {
 #include <fstream>
 #include <regex>
 #include <vector>
+#include <set>
 #include <string>
 #include <cstdlib>
 #include <cstdio>
@@ -37,10 +38,10 @@ typedef enum {
 class Wifi {
 public:
     Wifi();
-    Wifi(std::unordered_map<std::string, std::string> config);
     int add_network(const std::string& ssid, const std::string& password);
     int remove_network(const std::string& ssid);
     std::vector<std::string> get_known_wifi();
+    std::vector<std::string> get_available_wifi();
     int publish_info();
     int start();
     int stop();
@@ -53,8 +54,9 @@ public:
 
     std::map<std::string, std::function<int(const std::string&, json)>> callbacks;
     bool running;
+    bool scanning_for_networks;
     // std::string url;
-    json *info;
+    json info;
     int time;
 
     std::string wpa_conf_path;

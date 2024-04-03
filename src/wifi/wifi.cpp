@@ -1,11 +1,14 @@
 #include  "wifi.hpp"
 
-
 Wifi::Wifi()
 {
     this->__type = "WIFI";
     this->__prefix = "System/wifi";
     this->wpa_conf_path = "/etc/wpa_supplicant/wpa_supplicant.conf";
+    this->running = false;
+    this->scanning_for_networks = false;
+    this->info = json::parse(R"({})");
+    this->info["state"] = "stopped";
     this->__log = new Log(this->__type);
 }
 
@@ -23,6 +26,11 @@ int Wifi::start()
     system("sudo ifconfig wlan0 up");
     system("sudo systemctl enable wpa_supplicant");
     system("sudo systemctl start wpa_supplicant");
+    this->scanning_for_networks = false;
+    this->running = true;
+    this->info = json::parse(R"({})");
+    this->info["state"] = "running";
+    this->publish_info();
     return WIFI_SUCCESS;
 }
 
@@ -30,6 +38,20 @@ int Wifi::stop()
 {
     system("sudo systemctl stop wpa_supplicant");
     system("sudo ifconfig wlan0 down");
+    this->running = false;
+    json p = {{"state", "stopped"}};
+    this->info = json::parse(R"({})");
+    this->info["state"] = "stopped";
+    this->publish_info();
+    return WIFI_SUCCESS;
+}
+
+int Wifi::publish_info()
+{
+    if (!this->info.is_object()) {
+        return WIFI_COMMAND_ERROR;
+    }
+    this->client->publish(this->__prefix + "/Info", this->info, 1);
     return WIFI_SUCCESS;
 }
 
@@ -150,6 +172,36 @@ std::vector<std::string> Wifi::get_known_wifi()
     return known_networks;
 }
 
+std::vector<std::string> Wifi::get_available_wifi() {
+    std::set<std::string> ssids_set;
+    popen2_t *childinfo = new popen2_t;
+    this->scanning_for_networks = true;
+    if (popen2("sudo iwlist wlan0 scan | grep SSID", childinfo) == 0) {
+        char buffer[MAX_INPUT];
+        size_t nread;
+
+        if ((nread = read(childinfo->from_child, buffer, MAX_INPUT - 1)) > 0) {
+            buffer[nread] = '\0';
+            char *line = strtok(buffer, "\n");
+            while (line != NULL) {
+                char ssid[256];
+                // Assuming the line format is " ESSID:\"<ssid>\""
+                if (sscanf(line, " ESSID:\"%255[^\"]\"", ssid) == 1) {
+                    ssids_set.insert(std::string(ssid));
+                }
+                line = strtok(NULL, "\n");
+            }
+        }
+    }
+
+    if (childinfo)
+        delete childinfo;
+
+    this->scanning_for_networks = false;
+    std::vector<std::string> ssids(ssids_set.begin(), ssids_set.end());
+    return ssids;
+}
+
 int Wifi::connect(const std::string &ssid, const std::string &password)
 {
     this->add_network(ssid, password);
@@ -209,6 +261,32 @@ int Wifi::subscribe()
     {
         this->__log->print(LOG_NORMAL, "list_known_wifi. topic: %s", topic.c_str());
         std::vector<std::string> list = this->get_known_wifi();
+        json p = {
+            {"networks",  list},
+        };
+        client->publish(topic + "/success", p);
+        return 0;
+    };
+
+    callbacks[this->__prefix + "/list_available_networks/+"] = [&](const std::string& topic, json payload)
+    {
+        this->__log->print(LOG_NORMAL, "list_known_wifi. topic: %s", topic.c_str());
+        if (this->scanning_for_networks) {
+            json p = {
+                {"status", "error"},
+                {"msg", "scan is in progress"}
+            };
+            client->publish(topic + "/error", p);
+            return 0;
+        }
+        /**
+         * Should send a signal on scan start
+        */
+        // json scanning_p = {
+        //     {"status",  "scanning"},
+        // };
+        // client->publish(topic + "/scanning", scanning_p);
+        std::vector<std::string> list = this->get_available_wifi();
         json p = {
             {"networks",  list},
         };
@@ -330,4 +408,9 @@ int Wifi::unsubscribe()
     }
 
     return WIFI_SUCCESS;
+}
+
+Wifi::~Wifi()
+{
+    this->stop();
 }

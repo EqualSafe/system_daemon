@@ -5,15 +5,14 @@ Bluetooth::Bluetooth()
     this->__type = "BLUETOOTH";
     this->running = false;
     this->__prefix = "System/bluetooth";
-    json p = {{"running",this->running}};
-    this->info = &p;
+    this->info = json::parse(R"({})");
+    this->info["state"] = "stopped";
     this->__log = new Log(this->__type);
 }
 
 int Bluetooth::__start()
 {
     this->__log->print(LOG_NORMAL, "start");
-    int success;
     popen2_t *gatt_p = new popen2_t;
     popen2_t *advertise_p = new popen2_t;
 
@@ -24,11 +23,9 @@ int Bluetooth::__start()
     this->time = 0;
 
     while (!this->__kill_bluetooth_flag) {
-        json p = {
-            {"running", this->running},
-            {"running_time", this->time},
-        };
-        this->info = &p;
+        this->info = json::parse(R"({})");
+        this->info["state"] = "running";
+        this->info["running_time"] = this->time;
         this->time += 1;
         this->publish_info();
 
@@ -45,10 +42,9 @@ int Bluetooth::__start()
     system("sudo pkill -f bluetoothctl");
 
     this->running = false;
-    json p = {
-        {"running", this->running},
-    };
-    this->info = &p;
+    this->info = json::parse(R"({})");
+    this->info["state"] = "stopped";
+    this->publish_info();
 
     return BLUETOOTH_SUCCESS;
 }
@@ -75,10 +71,10 @@ int Bluetooth::stop()
 
 int Bluetooth::publish_info()
 {
-    if (!this->info) {
+    if (!this->info.is_object()) {
         return BLUETOOTH_COMMAND_ERROR;
     }
-    client->publish(this->__prefix + "/Info", *this->info);
+    client->publish(this->__prefix + "/Info", this->info, 1);
     return BLUETOOTH_SUCCESS;
 }
 
