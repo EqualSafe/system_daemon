@@ -124,6 +124,12 @@ int MQTTClientServer::__message_arrived(void* context, char* topicName, int topi
     std::string payloadStr((char*)message->payload, message->payloadlen);
     json payload = json::parse(payloadStr, nullptr, false); // Assuming json is defined elsewhere
 
+    // we will not allow for non object payloads
+    if (!payload.is_object()) {
+        self->__log->print(LOG_ERROR, "%s : invalid payload, not an object. got: %s", topic.c_str(), payloadStr.c_str());
+        return 1;
+    }
+
     for (const auto& sub : self->callbacks) {
         if (self->__topic_matches_subscription(sub.first, topic)) {
             for (auto& cb : sub.second) {
