@@ -58,5 +58,8 @@ install:
 	cp -r ./rootfs/* /
 	export PATH=$$PATH:/usr/share/system_daemon
 
+	systemctl daemon-reload
+	systemctl enable system_daemon.service
+
 # Phony targets
 .PHONY: all clean
