@@ -1,7 +1,8 @@
 #ifndef     SYSTEM_WIFI
 #define     SYSTEM_WIFI
 
-#define     MAX_INPUT       1024
+#define     MAX_INPUT               1024
+#define     MAX_COMMAND_BUFFER      8192
 
 extern "C" {
     #include "../utils/utils.h"

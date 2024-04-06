@@ -177,10 +177,10 @@ std::vector<std::string> Wifi::get_available_wifi() {
     popen2_t *childinfo = new popen2_t;
     this->scanning_for_networks = true;
     if (popen2("sudo iwlist wlan0 scan | grep SSID", childinfo) == 0) {
-        char buffer[MAX_INPUT];
+        char buffer[MAX_COMMAND_BUFFER];
         size_t nread;
 
-        if ((nread = read(childinfo->from_child, buffer, MAX_INPUT - 1)) > 0) {
+        if ((nread = read(childinfo->from_child, buffer, MAX_COMMAND_BUFFER - 1)) > 0) {
             buffer[nread] = '\0';
             char *line = strtok(buffer, "\n");
             while (line != NULL) {
