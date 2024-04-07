@@ -7,11 +7,13 @@
 #include "utils/log.hpp"
 #include "wifi/wifi.hpp"
 #include "bluetooth/bluetooth.hpp"
+#include "ir_sensor/ir_sensor.hpp"
 
 Log global_log = Log("GLOBAL");
 MQTTClientServer *mqtt_client;
 Bluetooth *bluetooth_instance;
 Wifi *wifi_instance;
+IRSensor *ir_sensor_instance;
 
 void handle_signal(int signal) {
     global_log.print(LOG_NORMAL, "Received signal %d, cleaning up and exitng!", signal);
@@ -48,7 +50,6 @@ int main(int argc, char **argv)
     global_log.print(LOG_NORMAL, "WAITING 3 SECOUNDS FOR THINGS TO SETTLE...");
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
-
     // bluetooth
     bluetooth_instance = new Bluetooth();
     bluetooth_instance->client = mqtt_client;
@@ -60,10 +61,17 @@ int main(int argc, char **argv)
     wifi_instance->subscribe();
     wifi_instance->start();
 
+    // ir_sensor
+    ir_sensor_instance = new IRSensor();
+    ir_sensor_instance->client = mqtt_client;
+    ir_sensor_instance->subscribe();
+    // ir_sensor_instance->start();
+
     global_log.print(LOG_NORMAL, "PUBLISHING INFO TOPICS...");
     std::this_thread::sleep_for(std::chrono::seconds(1));
     bluetooth_instance->publish_info();
     wifi_instance->publish_info();
+    ir_sensor_instance->publish_info();
 
     int time = 0;
     while (1) {

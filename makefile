@@ -7,7 +7,7 @@ CC = gcc
 INCLUDES = -I/opt/homebrew/include
 CXXFLAGS = -Wall -std=c++11
 CFLAGS = -Wall -std=c11
-LDFLAGS = -lpthread -I/opt/homebrew/Cellar/libpaho-mqtt/1.3.13/include -L/opt/homebrew/Cellar/libpaho-mqtt/1.3.13/lib -lpaho-mqtt3c
+LDFLAGS = -lpthread -lpigpio -I/opt/homebrew/Cellar/libpaho-mqtt/1.3.13/include -L/opt/homebrew/Cellar/libpaho-mqtt/1.3.13/lib -lpaho-mqtt3c
 
 # Directories
 SRC_DIR = src
