@@ -55,8 +55,7 @@ clean:
 install:
 	mkdir -p /usr/share/system_daemon
 	cp -r ./build/bin/* /usr/share/system_daemon/
-	cp -r ./rootfs/* /
-	export PATH=$$PATH:/usr/share/system_daemon
+	cp -r rootfs/* /
 
 	systemctl daemon-reload
 	systemctl enable system_daemon.service

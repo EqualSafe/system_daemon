@@ -1,6 +1,7 @@
 [Unit]
 Description=System Daemon Service
 After=network.target
+After=mosquitto.service
 
 [Service]
 ExecStart=/usr/share/system_daemon/system_daemon
