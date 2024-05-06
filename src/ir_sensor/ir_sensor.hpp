@@ -32,6 +32,10 @@ extern "C" {
 #include <climits>
 #include <nlohmann/json.hpp>
 
+#include <mutex>
+#include <chrono>
+#include <thread>
+
 #include <pigpio.h>
 
 #include "../utils/log.hpp"
@@ -69,9 +73,11 @@ public:
 
 private:
     int pin;
-    std::chrono::steady_clock::time_point last_trigger_time;
-    static constexpr long debounce_time_ms = 2000;
+    std::thread *timer_thread;
+    std::mutex timer_lock;
+    bool timer_reset;
 
+    void __start_timer();
     static void __gpio_callback(int gpio, int level, uint32_t tick, void *udata);
 };
 

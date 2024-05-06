@@ -30,6 +30,7 @@ int IRSensor::start() {
     gpioSetISRFuncEx(this->pin, EITHER_EDGE, 0, this->__gpio_callback, this);
     this->info = json::parse(R"({})");
     this->info["state"] = "running";
+    this->info["detect"] = false;
     this->publish_info();
     return IRSENSOR_SUCCESS;
 }
@@ -39,6 +40,7 @@ int IRSensor::stop() {
     gpioSetISRFuncEx(this->pin, EITHER_EDGE, 0, nullptr, nullptr);
     this->info = json::parse(R"({})");
     this->info["state"] = "stopped";
+    this->info["detect"] = false;
     this->publish_info();
     return IRSENSOR_SUCCESS;
 }
@@ -52,20 +54,53 @@ int IRSensor::publish_info()
     return IRSENSOR_SUCCESS;
 }
 
+void IRSensor::__start_timer()
+{
+    this->__log->print(LOG_SUCCESS, "Starting 10 seconds timer");
+    std::lock_guard<std::mutex> lock(this->timer_lock);
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    if (this->timer_reset) {
+        this->__log->print(LOG_WARNING, "Exiting timer without publishing");
+        return;
+    }
+    this->__log->print(LOG_SUCCESS, "No movement detected, setting detect to false and publishing");
+    this->info = json::parse(R"({})");
+    this->info["state"] = "running";
+    this->info["detect"] = false;
+    this->publish_info();
+
+    this->timer_reset = false;
+}
+
 void IRSensor::__gpio_callback(int gpio, int level, uint32_t tick, void *udata) {
     IRSensor *self = static_cast<IRSensor*>(udata);
     self->__log->print(LOG_NORMAL, "ISR function triggered");
 
-    self->info = json::parse(R"({})");
-    self->info["state"] = "running";
     if (level) {
         self->__log->print(LOG_SUCCESS, "IR Sensor pin HIGH");
-        self->info["detect"] = false;
+        if (self->info["detect"].is_boolean() && self->info["detect"] == true) {
+            self->__log->print(LOG_WARNING, "detect is already true, will not publish");
+            return;
+        }
+        self->info = json::parse(R"({})");
+        self->info["state"] = "running";
+        self->info["detect"] = true;
+        self->publish_info();
     } else {
         self->__log->print(LOG_SUCCESS, "IR Sensor pin LOW");
-        self->info["detect"] = true;
+        if (self->timer_reset) {
+            return;
+        }
+        if (self->timer_thread) {
+            self->timer_reset = true;
+            self->__log->print(LOG_SUCCESS, "Joining timer and restarting...");
+            self->timer_thread->join();
+            delete self->timer_thread;
+            self->timer_reset = false;
+        }
+        // Start timer...
+        self->timer_thread = new std::thread(&IRSensor::__start_timer, self);
     }
-    self->publish_info();
 }
 
 int IRSensor::subscribe()
